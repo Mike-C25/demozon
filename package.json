@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/Mike-C25/demozon/issues"
   },
-  "homepage": "https://github.com/Mike-C25/demozon#readme"
+  "homepage": "https://github.com/Mike-C25/demozon#readme",
+  "dependencies": {
+    "inquirer": "^3.3.0",
+    "mysql": "^2.15.0"
+  }
 }
