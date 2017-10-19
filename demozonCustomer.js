@@ -2,6 +2,8 @@ var inquirer = require('inquirer');
 var mysql = require('mysql');
 var currentID;
 var currentAmount;
+var userCart;
+var cartTotal;
 
 
 var connection = mysql.createConnection({
@@ -39,7 +41,8 @@ function initialPrompt() {
     ]).then(function(res) {
         currentID = parseInt(res.userItemID);
         currentAmount = parseInt(res.userAmount);
-        console.log(currentID, currentAmount);
+
+        // console.log(currentID, currentAmount);
         if (currentID && currentAmount) {
             console.log("Connecting to database...");
             //check
@@ -68,10 +71,38 @@ function dataCheck() {
         }
         if (checkID) {
             console.log(`\nSelecting ID: ${currentID} from database...\nProduct: ${res[currentID-1].product_name}\nchecking for available stock...\n`);
-            if (res[currentID-1].stock_quantity - currentAmount >= 0) {
-                var rItems = res[currentID-1].stock_quantity - currentAmount;
-                console.log(`Item available! Placing order in your shopping cart`)
-                updateItem(rItems); 
+            if (res[currentID - 1].stock_quantity - currentAmount >= 0) {
+
+                var rItems = res[currentID - 1].stock_quantity - currentAmount;
+                console.log(`Item available! Placing order in your shopping cart`);
+
+                if (userCart === undefined) {
+                    console.log("Cart Empty....making new cart");
+                    userCart = [];
+                    userCart.push({
+                        item: res[currentID - 1].product_name,
+                        quantity: currentAmount,
+                        price: res[currentID - 1].price,
+                        combinedPrice: (res[currentID - 1].price * currentAmount)
+                    });
+
+                } else {
+                    for (item in userCart) {
+                        if (userCart[items].item === res[currentID - 1].product_name) {
+                            userCart[items].quantity = currentAmount;
+                            console.log("1:1");
+                        } else {
+                            console.log("1:2");
+                            userCart.push({
+                                item: res[currentID - 1].product_name,
+                                quantity: currentAmount
+                            });
+                        }
+                    }
+
+                }
+
+                updateItem(rItems);
             } else {
                 console.log(`Sorry,looks like we've run out of stock on that item. Returning to start`);
                 initialPrompt();
@@ -92,9 +123,34 @@ function updateItem(rItem) {
     var qItem = "UPDATE products SET stock_quantity = ? WHERE item_id = ?";
     connection.query(qItem, [rItem, currentID], function(err, res) {
         if (err) console.log(err);
-        console.log(res);
-        viewInventory();
+        // console.log(res);
+        // viewInventory();
+        viewCart();
     })
+}
+
+function viewCart() {
+    cartTotal = 0;
+    for (items in userCart) {
+        console.log("|---------------------------------------------|");
+        console.log(`Item: ${userCart[items].item}\nQuantity: ${userCart[items].quantity}\nPrice: ${userCart[items].combinedPrice}`)
+        console.log("|---------------------------------------------|");
+        cartTotal += userCart[items].combinedPrice; 
+    }
+    console.log(`\nTotal: $${cartTotal}`);
+    inquirer.prompt([{
+            type: "confirm",
+            message: "Would you like to place another item?",
+            name: "order"
+        }
+    ]).then(function(res) {
+        if(res.order){
+            initialPrompt();
+        }else{
+            console.log(`Closing application!`)
+            connection.end()
+        }
+    });
 }
 
 function viewInventory() {
